@@ -1,59 +1,50 @@
-#!/usr/python
+#!/usr/bin/python
 import socket, sys
+import binascii
 from struct import *
- 
+
+def MAC_format(string):
+	temp = list()
+	for i in range(0,len(string),2):
+		try:#01 23 45 67 
+			temp.append(string[i:i+2])
+		except:
+			break;
+	return ":".join(temp)
+
+
+
+
 try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+	rawSocket=socket.socket(socket.PF_PACKET,socket.SOCK_RAW,socket.htons(0x0800))
 except socket.error , msg:
     print 'Socket could not be created. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
     sys.exit()
- 
 while True:
-    packet = s.recvfrom(65565)
-     
-    packet = packet[0]
-     
-    ip_header = packet[0:20]
-     
-    iph = unpack('!BBHHHBBH4s4s' , ip_header)
-     
-    version_ihl = iph[0]
-    version = version_ihl >> 4
-    ihl = version_ihl & 0xF
-     
-    iph_length = ihl * 4
-     
-    ttl = iph[5]
-    protocol = iph[6]
-    s_addr = socket.inet_ntoa(iph[8]);
-    d_addr = socket.inet_ntoa(iph[9]);
-     
-    print 'Version : ' + str(version)
-    print 'IP Header Length : ' + str(ihl)
-    print 'TTL : ' + str(ttl)
-    print 'Protocol : ' + str(protocol)
-    print 'Source Address : ' + str(s_addr)
-    print 'Destination Address : ' + str(d_addr)
+	receivedPacket=rawSocket.recv(65565)
+	ethernet_header=receivedPacket[0:14]
+	eth=unpack("!6s6s2s",ethernet_header)
+	ip_header = receivedPacket[14:34]
+	iph=unpack("!12s4s4s",ip_header)
+	tcp_header=receivedPacket[34:54]
+	tcph=unpack("!2s2s16s",tcp_header)
+	sourcePort=str(int(binascii.hexlify(tcph[0]),16))
+	destinationPort=str(int(binascii.hexlify(tcph[1]),16))
 
-    tcp_header = packet[iph_length:iph_length+20]
-    tcph = unpack('!HHLLBBHHH' , tcp_header)
-
-    source_port = tcph[0]
-    dest_port = tcph[1]
-    sequence = tcph[2]
-    acknowledgement = tcph[3]
-    doff_reserved = tcph[4]
-    tcph_length = doff_reserved >> 4
- 
-    print 'Source Port : ' + str(source_port)
-    print 'Dest Port : ' + str(dest_port)
-    print 'Sequence Number : ' + str(sequence)
-    print 'Acknowledgement : ' + str(acknowledgement)
-    print ' TCP header length : ' + str(tcph_length)
- 
-    h_size = iph_length + tcph_length * 4
-    data_size = len(packet) - h_size 
-    data = packet[h_size:]
-
-
-    print 'Data : ' + data +'\n'
+	if(sourcePort=="80" or destinationPort=="80"):
+		data = receivedPacket[66:]
+		destinationMAC= MAC_format(binascii.hexlify(eth[0]))
+		sourceMAC= MAC_format(binascii.hexlify(eth[1]))
+		protocol= binascii.hexlify(eth[2])
+		destinationIP=socket.inet_ntoa(iph[2])
+		sourceIP=socket.inet_ntoa(iph[1])
+		protocol = binascii.hexlify(iph[0])
+		print "Destination MAC: " + destinationMAC
+		print "Source MAC: " + sourceMAC
+		print "Length: " +str(len(receivedPacket))
+		print "Source IP: " + sourceIP
+		print "Destination IP: " + destinationIP
+		print "Source Port: " + sourcePort
+		print "Destination Port: " + destinationPort+"\n"
+		print binascii.hexlify(data)
+		print "\n"
