@@ -12,6 +12,21 @@ def MAC_format(string):
 			break;
 	return ":".join(temp)
 
+def data_hex_ascii(string):
+	temp_str=""
+	temp_lis=list()
+	for i in range(0,len(string),2):
+		if(i%32==0):
+			temp_lis = temp_str.split(" ")
+			for each in temp_lis:
+				temp_str+=each.decode("hex")
+			print temp_str
+			temp_str = ""
+		if(i%16==0):
+			temp_str += " "
+		temp_str += string[i:i+2]+" "
+
+
 
 
 
@@ -46,5 +61,5 @@ while True:
 		print "Destination IP: " + destinationIP
 		print "Source Port: " + sourcePort
 		print "Destination Port: " + destinationPort+"\n"
-		print binascii.hexlify(data)
+		data_hex_ascii(binascii.hexlify(data))
 		print "\n"
