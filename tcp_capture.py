@@ -2,7 +2,6 @@
 
 
 #Korean Languae is not supported in sublimetext.
-#So, I will use English :-)
 #Author : TAEIL,LEE BOB6 CON//
 #Date : 2017/07/17
 
